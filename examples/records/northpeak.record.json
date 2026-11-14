@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "source": {
+    "kind": "email",
+    "file": "northpeak-sale-email.txt",
+    "pages": null
+  },
+  "extraction": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "extracted_at": "2026-11-14T12:00:00.000Z",
+    "unverified_quotes": 0
+  },
+  "promotion": {
+    "supplier": {
+      "value": "Northpeak Outfitters",
+      "quote": "Northpeak Outfitters (a fictional sample store)",
+      "page": null,
+      "verified": true
+    },
+    "product": {
+      "value": "Ridgeline 2 waterproof hiking boot",
+      "quote": "Ridgeline 2 waterproof hiking boot",
+      "page": null,
+      "verified": true
+    },
+    "destination": null,
+    "prices": [
+      {
+        "label": "Regular price",
+        "amount": 180,
+        "currency": "USD",
+        "basis": "per_unit",
+        "quote": "regular price $180",
+        "page": null,
+        "verified": true
+      },
+      {
+        "label": "Sale price",
+        "amount": 126,
+        "currency": "USD",
+        "basis": "per_unit",
+        "quote": "now $126",
+        "page": null,
+        "verified": true
+      }
+    ],
+    "discounts": [
+      {
+        "label": "Trail Days discount",
+        "percent": 30,
+        "quote": "30% off the Ridgeline 2 boot",
+        "page": null,
+        "verified": true
+      }
+    ],
+    "travel_dates": [
+      {
+        "label": "Sale period",
+        "start": "2026-11-20",
+        "end": "2026-11-30",
+        "quote": "Sale runs November 20-30, 2026",
+        "page": null,
+        "verified": true
+      }
+    ],
+    "booking_deadline": {
+      "date": "2026-11-30",
+      "quote": "Sale runs November 20-30, 2026",
+      "page": null,
+      "verified": true
+    },
+    "conditions": [
+      {
+        "text": "While supplies last.",
+        "quote": "While supplies last.",
+        "page": null,
+        "verified": true
+      },
+      {
+        "text": "Limit 2 pairs per customer.",
+        "quote": "Limit 2 pairs per customer.",
+        "page": null,
+        "verified": true
+      },
+      {
+        "text": "Prices exclude sales tax.",
+        "quote": "Prices exclude sales tax.",
+        "page": null,
+        "verified": true
+      }
+    ]
+  }
+}

@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "source": {
+    "kind": "pdf",
+    "file": "sunward-flyer.pdf",
+    "pages": 2
+  },
+  "extraction": {
+    "provider": "anthropic",
+    "model": "claude-opus-5-5",
+    "extracted_at": "2026-11-14T12:00:00.000Z",
+    "unverified_quotes": 0
+  },
+  "promotion": {
+    "supplier": {
+      "value": "Sunward Travel Co.",
+      "quote": "Sunward Travel Co.",
+      "page": 1,
+      "verified": true
+    },
+    "product": {
+      "value": "Spring Escape: 7 nights at Hotel Brisa Serena, all-inclusive",
+      "quote": "7 nights at Hotel Brisa Serena, all-inclusive",
+      "page": 1,
+      "verified": true
+    },
+    "destination": {
+      "value": "Isla Marisol",
+      "quote": "Spring Escape to Isla Marisol",
+      "page": 1,
+      "verified": true
+    },
+    "prices": [
+      {
+        "label": "7-night package, Garden View Room",
+        "amount": 1299,
+        "currency": "USD",
+        "basis": "per_person_double_occupancy",
+        "quote": "Garden View Room from US$1,299 per person, based on double occupancy",
+        "page": 1,
+        "verified": true
+      },
+      {
+        "label": "7-night package, Ocean View Room",
+        "amount": 1549,
+        "currency": "USD",
+        "basis": "per_person_double_occupancy",
+        "quote": "Ocean View Room from US$1,549 per person, based on double occupancy",
+        "page": 1,
+        "verified": true
+      },
+      {
+        "label": "Taxes and fees (not included in package price)",
+        "amount": 189,
+        "currency": "USD",
+        "basis": "per_person",
+        "quote": "taxes and fees of US$189 per person",
+        "page": 2,
+        "verified": true
+      }
+    ],
+    "discounts": [
+      {
+        "label": "Early booking discount",
+        "percent": 30,
+        "quote": "Save 30% when you book early",
+        "page": 1,
+        "verified": true
+      }
+    ],
+    "travel_dates": [
+      {
+        "label": "Travel window",
+        "start": "2027-03-01",
+        "end": "2027-04-30",
+        "quote": "Travel between March 1 and April 30, 2027",
+        "page": 1,
+        "verified": true
+      },
+      {
+        "label": "Blackout dates",
+        "start": "2027-03-20",
+        "end": "2027-03-28",
+        "quote": "Blackout dates: March 20 - March 28, 2027.",
+        "page": 2,
+        "verified": true
+      }
+    ],
+    "booking_deadline": {
+      "date": "2026-12-15",
+      "quote": "Book by December 15, 2026.",
+      "page": 2,
+      "verified": true
+    },
+    "conditions": [
+      {
+        "text": "Prices exclude taxes and fees of US$189 per person.",
+        "quote": "Prices exclude taxes and fees of US$189 per person.",
+        "page": 2,
+        "verified": true
+      },
+      {
+        "text": "Subject to availability.",
+        "quote": "Subject to availability.",
+        "page": 2,
+        "verified": true
+      },
+      {
+        "text": "A non-refundable deposit of 20% is due at booking.",
+        "quote": "A non-refundable deposit of 20% is due at booking.",
+        "page": 2,
+        "verified": true
+      }
+    ]
+  }
+}

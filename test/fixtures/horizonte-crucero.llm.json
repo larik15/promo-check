@@ -1,0 +1,53 @@
+{
+  "supplier": { "value": "Viajes Horizonte", "quote": "Viajes Horizonte (empresa ficticia de ejemplo)", "page": null },
+  "product": {
+    "value": "Crucero Estrella del Sur, 5 noches, comidas incluidas",
+    "quote": "crucero\nEstrella del Sur: 5 noches",
+    "page": null
+  },
+  "destination": { "value": "Islas de Bahía Serena", "quote": "por las islas de Bahía Serena", "page": null },
+  "prices": [
+    {
+      "label": "Cabina interior",
+      "amount": 1299,
+      "currency": "USD",
+      "basis": "per_person_double_occupancy",
+      "quote": "Tarifa desde 1.299 USD por persona en ocupación doble (cabina interior).",
+      "page": null
+    },
+    {
+      "label": "Cabina con balcón",
+      "amount": 1749,
+      "currency": "USD",
+      "basis": "per_person_double_occupancy",
+      "quote": "Cabina con balcón desde 1.749 USD por persona en ocupación doble.",
+      "page": null
+    },
+    {
+      "label": "Impuestos portuarios (no incluidos)",
+      "amount": 150,
+      "currency": "USD",
+      "basis": "per_person",
+      "quote": "Impuestos portuarios de 150 USD por persona no incluidos.",
+      "page": null
+    }
+  ],
+  "discounts": [
+    {
+      "label": "Descuento para el segundo pasajero de la cabina",
+      "percent": 25,
+      "quote": "El segundo pasajero de la cabina obtiene un 25% de descuento.",
+      "page": null
+    }
+  ],
+  "travel_dates": [
+    { "label": "Salida 1", "start": "2027-02-10", "end": "2027-02-15", "quote": "del 10 al 15 de febrero de 2027", "page": null },
+    { "label": "Salida 2", "start": "2027-03-03", "end": "2027-03-08", "quote": "del 3 al 8 de marzo de 2027", "page": null }
+  ],
+  "booking_deadline": { "date": "2026-11-30", "quote": "Reserva antes del 30 de noviembre de 2026.", "page": null },
+  "conditions": [
+    { "text": "Impuestos portuarios no incluidos.", "quote": "Impuestos portuarios de 150 USD por persona no incluidos.", "page": null },
+    { "text": "Sujeto a disponibilidad.", "quote": "Sujeto a disponibilidad.", "page": null },
+    { "text": "Aplican restricciones.", "quote": "Aplican restricciones.", "page": null }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "name": "promo-check",
+  "version": "0.1.0",
+  "description": "Extract travel and retail promotions into source-quoted records, then check AI-generated marketing copy against them.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "promo-check": "dist/cli.js"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "pretest": "npm run build",
+    "test": "vitest run",
+    "fixtures": "node scripts/make-fixtures.mjs",
+    "examples": "npm run build && node scripts/make-examples.mjs",
+    "prepare": "npm run build"
+  },
+  "keywords": [
+    "marketing",
+    "promotions",
+    "travel",
+    "retail",
+    "fact-checking",
+    "llm",
+    "claude"
+  ],
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.8.0",
+    "openai": "^7.57.0",
+    "unpdf": "^2.1.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "pdf-lib": "^1.17.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}
