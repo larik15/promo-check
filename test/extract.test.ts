@@ -106,7 +106,12 @@ describe("anthropicProvider", () => {
         messages: {
           parse: async (p: unknown) => {
             params = p;
-            return { stop_reason: "end_turn", stop_details: null, parsed_output: llmOutput("sunward-flyer") };
+            return {
+              stop_reason: "end_turn",
+              stop_details: null,
+              parsed_output: llmOutput("sunward-flyer"),
+              usage: { input_tokens: 3000, output_tokens: 1500, cache_creation_input_tokens: null, cache_read_input_tokens: null },
+            };
           },
         },
       },
@@ -115,6 +120,7 @@ describe("anthropicProvider", () => {
     const record = await extract(fixture("sunward-flyer.pdf"), { provider, now: NOW });
 
     expect(record.extraction).toMatchObject({ provider: "anthropic", model: "claude-opus-5-5", unverified_quotes: 0 });
+    expect(record.extraction.usage).toEqual({ input_tokens: 3000, output_tokens: 1500, cache_creation_input_tokens: 0, cache_read_input_tokens: 0 });
     expect(params.model).toBe("claude-opus-5-5");
     expect(params.fallbacks).toBe("default");
     expect(params.betas).toEqual(["server-side-fallback-2026-07-01"]);
@@ -157,5 +163,29 @@ describe("openAIJsonSchema", () => {
     const schema = openAIJsonSchema();
     expect(schema.$schema).toBeUndefined();
     walk(schema);
+  });
+});
+
+describe("offer references", () => {
+  it("maps aliases to the canonical offer name", async () => {
+    const output = llmOutput("velatura-city-breaks");
+    output.prices[1]!.offer = "lisboa";
+    const record = await extract(fixture("velatura-city-breaks-email.txt"), { provider: mockProvider(output), now: NOW });
+    expect(record.promotion.prices[1]!.offer).toBe("Lisbon");
+    expect(record.extraction.warnings).toEqual([]);
+  });
+
+  it("drops references to unknown offers with a warning", async () => {
+    const output = llmOutput("velatura-city-breaks");
+    output.discounts[0]!.offer = "Barcelona";
+    const record = await extract(fixture("velatura-city-breaks-email.txt"), { provider: mockProvider(output), now: NOW });
+    expect(record.promotion.discounts[0]!.offer).toBeNull();
+    expect(record.extraction.warnings).toEqual(['Discount 15% referred to unknown offer "Barcelona"; treated as promotion-wide.']);
+  });
+
+  it("verifies offer quotes", async () => {
+    const record = await extract(fixture("velatura-city-breaks-email.txt"), { provider: mockProvider(llmOutput("velatura-city-breaks")), now: NOW });
+    expect(record.promotion.offers.map((o) => o.verified)).toEqual([true, true]);
+    expect(record.extraction.unverified_quotes).toBe(0);
   });
 });

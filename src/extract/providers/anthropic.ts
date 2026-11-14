@@ -1,9 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
-import { ExtractedPromotionSchema, type ExtractedPromotion } from "../../schema.js";
+import { ExtractedPromotionSchema } from "../../schema.js";
 import { SYSTEM_PROMPT, userPrompt } from "../prompt.js";
 import { toBase64 } from "../source.js";
-import { ExtractionError, type ExtractionProvider, type ExtractionRequest } from "./types.js";
+import { ExtractionError, type ExtractionProvider, type ExtractionRequest, type ExtractionResult } from "./types.js";
 
 export const DEFAULT_ANTHROPIC_MODEL = "claude-opus-5-5";
 
@@ -25,7 +25,7 @@ export function anthropicProvider(options: AnthropicProviderOptions = {}): Extra
   return {
     name: "anthropic",
     model,
-    async extract({ source, referenceDate }: ExtractionRequest): Promise<ExtractedPromotion> {
+    async extract({ source, referenceDate }: ExtractionRequest): Promise<ExtractionResult> {
       client ??= new Anthropic();
       const content: Anthropic.Beta.BetaContentBlockParam[] = [];
       if (source.kind === "pdf" && source.data) {
@@ -67,7 +67,18 @@ export function anthropicProvider(options: AnthropicProviderOptions = {}): Extra
       if (!response.parsed_output) {
         throw new ExtractionError("The model did not return a valid promotion record.");
       }
-      return response.parsed_output;
+      const u = response.usage;
+      return {
+        promotion: response.parsed_output,
+        usage: u
+          ? {
+              input_tokens: u.input_tokens,
+              output_tokens: u.output_tokens,
+              cache_creation_input_tokens: u.cache_creation_input_tokens ?? 0,
+              cache_read_input_tokens: u.cache_read_input_tokens ?? 0,
+            }
+          : null,
+      };
     },
   };
 }

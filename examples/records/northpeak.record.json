@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "source": {
     "kind": "email",
     "file": "northpeak-sale-email.txt",
@@ -9,7 +9,9 @@
     "provider": "anthropic",
     "model": "claude-opus-5-5",
     "extracted_at": "2026-11-14T12:00:00.000Z",
-    "unverified_quotes": 0
+    "unverified_quotes": 0,
+    "warnings": [],
+    "usage": null
   },
   "promotion": {
     "supplier": {
@@ -25,8 +27,10 @@
       "verified": true
     },
     "destination": null,
+    "offers": [],
     "prices": [
       {
+        "offer": null,
         "label": "Regular price",
         "amount": 180,
         "currency": "USD",
@@ -36,6 +40,7 @@
         "verified": true
       },
       {
+        "offer": null,
         "label": "Sale price",
         "amount": 126,
         "currency": "USD",
@@ -47,6 +52,7 @@
     ],
     "discounts": [
       {
+        "offer": null,
         "label": "Trail Days discount",
         "percent": 30,
         "quote": "30% off the Ridgeline 2 boot",
@@ -56,6 +62,7 @@
     ],
     "travel_dates": [
       {
+        "offer": null,
         "label": "Sale period",
         "start": "2026-11-20",
         "end": "2026-11-30",

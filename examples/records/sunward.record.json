@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "source": {
     "kind": "pdf",
     "file": "sunward-flyer.pdf",
@@ -9,7 +9,9 @@
     "provider": "anthropic",
     "model": "claude-opus-5-5",
     "extracted_at": "2026-11-14T12:00:00.000Z",
-    "unverified_quotes": 0
+    "unverified_quotes": 0,
+    "warnings": [],
+    "usage": null
   },
   "promotion": {
     "supplier": {
@@ -30,8 +32,32 @@
       "page": 1,
       "verified": true
     },
+    "offers": [
+      {
+        "name": "Garden View Room",
+        "aliases": [
+          "Garden View",
+          "vista al jardín",
+          "vista jardín"
+        ],
+        "quote": "Garden View Room",
+        "page": 1,
+        "verified": true
+      },
+      {
+        "name": "Ocean View Room",
+        "aliases": [
+          "Ocean View",
+          "vista al mar"
+        ],
+        "quote": "Ocean View Room",
+        "page": 1,
+        "verified": true
+      }
+    ],
     "prices": [
       {
+        "offer": "Garden View Room",
         "label": "7-night package, Garden View Room",
         "amount": 1299,
         "currency": "USD",
@@ -41,6 +67,7 @@
         "verified": true
       },
       {
+        "offer": "Ocean View Room",
         "label": "7-night package, Ocean View Room",
         "amount": 1549,
         "currency": "USD",
@@ -50,6 +77,7 @@
         "verified": true
       },
       {
+        "offer": null,
         "label": "Taxes and fees (not included in package price)",
         "amount": 189,
         "currency": "USD",
@@ -61,6 +89,7 @@
     ],
     "discounts": [
       {
+        "offer": null,
         "label": "Early booking discount",
         "percent": 30,
         "quote": "Save 30% when you book early",
@@ -70,6 +99,7 @@
     ],
     "travel_dates": [
       {
+        "offer": null,
         "label": "Travel window",
         "start": "2027-03-01",
         "end": "2027-04-30",
@@ -78,6 +108,7 @@
         "verified": true
       },
       {
+        "offer": null,
         "label": "Blackout dates",
         "start": "2027-03-20",
         "end": "2027-03-28",

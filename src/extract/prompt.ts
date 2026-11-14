@@ -8,6 +8,8 @@ Rules:
 - Record every distinct price (each room type, cabin, size or departure), each with its currency and basis. "pp" / "por persona" means per person; "based on double occupancy" / "en ocupación doble" means per_person_double_occupancy. Use "unspecified" when the basis is not stated.
 - Amounts are plain numbers: "$1,299" -> 1299, "1.299,50 €" -> 1299.5.
 - Dates are ISO YYYY-MM-DD. When a date has no year, use the first occurrence on or after the reference date unless the source implies otherwise.
+- "offers" lists every separately priced option: each destination, package, product, room or cabin type. Give each a short "name" as written in the source and "aliases" that marketing copy might use instead (short forms, and the English or Spanish translation, e.g. "Lisboa" for "Lisbon"). Leave "offers" empty when there is only one price option.
+- Set "offer" on each price, discount and date range to the offer name it belongs to, or null when it applies to the whole promotion (taxes, general sale periods, blackouts for everything).
 - "booking_deadline" is the last day to book or buy (e.g. "book by", "reserva antes del", "offer ends").
 - "conditions" lists restrictions and disclosures: availability, taxes and fees, blackout dates, minimum stay, non-refundable deposits, limits per customer, and similar.
 - For PDFs, "page" is the 1-based page number where the quote appears. For images and email text, "page" is null.`;

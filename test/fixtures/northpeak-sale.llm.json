@@ -1,21 +1,75 @@
 {
-  "supplier": { "value": "Northpeak Outfitters", "quote": "Northpeak Outfitters (a fictional sample store)", "page": null },
-  "product": { "value": "Ridgeline 2 waterproof hiking boot", "quote": "Ridgeline 2 waterproof hiking boot", "page": null },
+  "supplier": {
+    "value": "Northpeak Outfitters",
+    "quote": "Northpeak Outfitters (a fictional sample store)",
+    "page": null
+  },
+  "product": {
+    "value": "Ridgeline 2 waterproof hiking boot",
+    "quote": "Ridgeline 2 waterproof hiking boot",
+    "page": null
+  },
   "destination": null,
+  "offers": [],
   "prices": [
-    { "label": "Regular price", "amount": 180, "currency": "USD", "basis": "per_unit", "quote": "regular price $180", "page": null },
-    { "label": "Sale price", "amount": 126, "currency": "USD", "basis": "per_unit", "quote": "now $126", "page": null }
+    {
+      "offer": null,
+      "label": "Regular price",
+      "amount": 180,
+      "currency": "USD",
+      "basis": "per_unit",
+      "quote": "regular price $180",
+      "page": null
+    },
+    {
+      "offer": null,
+      "label": "Sale price",
+      "amount": 126,
+      "currency": "USD",
+      "basis": "per_unit",
+      "quote": "now $126",
+      "page": null
+    }
   ],
   "discounts": [
-    { "label": "Trail Days discount", "percent": 30, "quote": "30% off the Ridgeline 2 boot", "page": null }
+    {
+      "offer": null,
+      "label": "Trail Days discount",
+      "percent": 30,
+      "quote": "30% off the Ridgeline 2 boot",
+      "page": null
+    }
   ],
   "travel_dates": [
-    { "label": "Sale period", "start": "2026-11-20", "end": "2026-11-30", "quote": "Sale runs November 20-30, 2026", "page": null }
+    {
+      "offer": null,
+      "label": "Sale period",
+      "start": "2026-11-20",
+      "end": "2026-11-30",
+      "quote": "Sale runs November 20-30, 2026",
+      "page": null
+    }
   ],
-  "booking_deadline": { "date": "2026-11-30", "quote": "Sale runs November 20-30, 2026", "page": null },
+  "booking_deadline": {
+    "date": "2026-11-30",
+    "quote": "Sale runs November 20-30, 2026",
+    "page": null
+  },
   "conditions": [
-    { "text": "While supplies last.", "quote": "While supplies last.", "page": null },
-    { "text": "Limit 2 pairs per customer.", "quote": "Limit 2 pairs per customer.", "page": null },
-    { "text": "Prices exclude sales tax.", "quote": "Prices exclude sales tax.", "page": null }
+    {
+      "text": "While supplies last.",
+      "quote": "While supplies last.",
+      "page": null
+    },
+    {
+      "text": "Limit 2 pairs per customer.",
+      "quote": "Limit 2 pairs per customer.",
+      "page": null
+    },
+    {
+      "text": "Prices exclude sales tax.",
+      "quote": "Prices exclude sales tax.",
+      "page": null
+    }
   ]
 }

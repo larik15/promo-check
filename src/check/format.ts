@@ -19,7 +19,8 @@ export function formatReport(report: CheckReport): string {
   if (report.claims.length) {
     lines.push("", "Claims found:");
     for (const c of report.claims) {
-      lines.push(`  ${c.ok ? "ok " : "BAD"}  line ${String(c.line).padEnd(3)} ${c.type.padEnd(8)} ${JSON.stringify(c.raw).padEnd(28)} -> ${c.normalized}`);
+      const offer = c.offer ? `  [${c.offer}]` : "";
+      lines.push(`  ${c.ok ? "ok " : "BAD"}  line ${String(c.line).padEnd(3)} ${c.type.padEnd(8)} ${JSON.stringify(c.raw).padEnd(28)} -> ${c.normalized}${offer}`);
     }
   }
   return lines.join("\n");

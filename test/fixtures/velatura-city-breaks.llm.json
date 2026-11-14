@@ -1,0 +1,126 @@
+{
+  "supplier": {
+    "value": "Velatura Travel",
+    "quote": "Velatura Travel (a fictional sample agency)",
+    "page": null
+  },
+  "product": {
+    "value": "Spring city breaks",
+    "quote": "two spring city breaks",
+    "page": null
+  },
+  "destination": {
+    "value": "Madrid and Lisbon",
+    "quote": "Madrid and Lisbon",
+    "page": null
+  },
+  "offers": [
+    {
+      "name": "Madrid",
+      "aliases": [],
+      "quote": "Madrid: 4 nights at Hotel Ejemplo Centro",
+      "page": null
+    },
+    {
+      "name": "Lisbon",
+      "aliases": [
+        "Lisboa"
+      ],
+      "quote": "Lisbon: 3 nights at Hotel Exemplo Ribeira",
+      "page": null
+    }
+  ],
+  "prices": [
+    {
+      "offer": "Madrid",
+      "label": "Madrid, 4 nights",
+      "amount": 1299,
+      "currency": "EUR",
+      "basis": "per_person_double_occupancy",
+      "quote": "from €1,299 per person, based on double occupancy",
+      "page": null
+    },
+    {
+      "offer": "Lisbon",
+      "label": "Lisbon, 3 nights",
+      "amount": 899,
+      "currency": "EUR",
+      "basis": "per_person_double_occupancy",
+      "quote": "from €899 per person, based on double occupancy",
+      "page": null
+    },
+    {
+      "offer": null,
+      "label": "Taxes and fees (not included)",
+      "amount": 95,
+      "currency": "EUR",
+      "basis": "per_person",
+      "quote": "Taxes and fees of €95 per person are not included.",
+      "page": null
+    }
+  ],
+  "discounts": [
+    {
+      "offer": "Madrid",
+      "label": "Early booking, Madrid",
+      "percent": 15,
+      "quote": "Early booking saves 15%.",
+      "page": null
+    },
+    {
+      "offer": "Lisbon",
+      "label": "Early booking, Lisbon",
+      "percent": 10,
+      "quote": "Early booking saves 10%.",
+      "page": null
+    }
+  ],
+  "travel_dates": [
+    {
+      "offer": "Madrid",
+      "label": "Madrid departure 1",
+      "start": "2027-04-05",
+      "end": "2027-04-09",
+      "quote": "April 5-9, 2027",
+      "page": null
+    },
+    {
+      "offer": "Madrid",
+      "label": "Madrid departure 2",
+      "start": "2027-05-03",
+      "end": "2027-05-07",
+      "quote": "May 3-7, 2027",
+      "page": null
+    },
+    {
+      "offer": "Lisbon",
+      "label": "Lisbon departure",
+      "start": "2027-04-12",
+      "end": "2027-04-15",
+      "quote": "Departure April 12-15, 2027.",
+      "page": null
+    }
+  ],
+  "booking_deadline": {
+    "date": "2026-12-15",
+    "quote": "Book by December 15, 2026.",
+    "page": null
+  },
+  "conditions": [
+    {
+      "text": "Taxes and fees of €95 per person are not included.",
+      "quote": "Taxes and fees of €95 per person are not included.",
+      "page": null
+    },
+    {
+      "text": "Subject to availability.",
+      "quote": "Subject to availability.",
+      "page": null
+    },
+    {
+      "text": "Terms apply.",
+      "quote": "Terms apply.",
+      "page": null
+    }
+  ]
+}

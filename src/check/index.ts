@@ -2,6 +2,7 @@ import type { PriceBasis, PromoRecord } from "../schema.js";
 import { detectLanguage, findClaims, findPercents, type BasisClaim, type Claim, type Language, type PriceClaim, type PercentClaim } from "./claims.js";
 import { toIso, type DateClaim, type PartialDate } from "./dates.js";
 import { formatAmount, sameAmount } from "./numbers.js";
+import { attributeOffers, findOfferMentions } from "./offers.js";
 import { DEFAULT_REQUIRED_TERMS, hasTerm, type RequiredTerm } from "./terms.js";
 
 export type Severity = "error" | "warning" | "info";
@@ -16,16 +17,20 @@ export interface Finding {
     | "percent_mismatch"
     | "date_mismatch"
     | "date_in_blackout"
+    | "wrong_offer"
     | "deadline_mismatch"
     | "deadline_passed"
     | "missing_term"
     | "record_unverified"
+    | "record_warning"
     | "no_claims";
   message: string;
   /** 1-based line in the marketing text. */
   line?: number;
   /** The text as written, e.g. "1.299 USD". */
   excerpt?: string;
+  /** Offer the claim was attributed to, if any. */
+  offer?: string | null;
 }
 
 export interface CheckedClaim {
@@ -34,6 +39,8 @@ export interface CheckedClaim {
   line: number;
   /** Normalized value, e.g. "1299 USD", "30%", "2027-03-12..2027-03-19". */
   normalized: string;
+  /** Offer (product, destination, room type...) the claim was attributed to, or null. */
+  offer: string | null;
   ok: boolean;
 }
 
@@ -98,8 +105,14 @@ function lineOf(text: string, index: number): number {
   return line;
 }
 
-function describePrice(p: PromoRecord["promotion"]["prices"][number]): string {
+type RecordPrice = PromoRecord["promotion"]["prices"][number];
+
+function describePrice(p: RecordPrice): string {
   return `${formatAmount(p.amount)} ${p.currency} ${p.basis.replace(/_/g, " ")} (${p.label})`;
+}
+
+function owners(items: Array<{ offer: string | null }>): string {
+  return [...new Set(items.map((i) => i.offer!))].join(" / ");
 }
 
 interface Window {
@@ -107,11 +120,15 @@ interface Window {
   end: string;
   label: string;
   blackout: boolean;
+  offer: string | null;
 }
 
 /**
  * Checks marketing text against a promotion record without any LLM.
  * Every price, percentage and date in the text must be backed by the record.
+ * When the record lists several offers, each claim is attributed to the
+ * nearest offer named in the text and compared only with that offer (and with
+ * promotion-wide values).
  */
 export function check(text: string, record: PromoRecord, options: CheckOptions = {}): CheckReport {
   const language = options.language ?? detectLanguage(text);
@@ -122,27 +139,33 @@ export function check(text: string, record: PromoRecord, options: CheckOptions =
   const findings: Finding[] = [];
   const checked: CheckedClaim[] = [];
   const claims = findClaims(text, language);
+  const claimOffers = attributeOffers(text, claims, findOfferMentions(text, promo.offers));
+
+  /** Items that apply to `offer`: its own plus promotion-wide ones. Without an offer, everything. */
+  const inScope = <T extends { offer: string | null }>(items: T[], offer: string | null): T[] =>
+    offer === null ? items : items.filter((i) => i.offer === null || i.offer === offer);
+  /** Items that belong to a different, named offer. */
+  const otherOffers = <T extends { offer: string | null }>(items: T[], offer: string | null): T[] =>
+    offer === null ? [] : items.filter((i) => i.offer !== null && i.offer !== offer);
 
   const windows: Window[] = promo.travel_dates.map((t) => ({
     start: t.start,
     end: t.end,
     label: t.label,
     blackout: BLACKOUT.test(t.label),
+    offer: t.offer,
   }));
   const deadline = promo.booking_deadline?.date ?? null;
   const recordDates = [...windows.flatMap((w) => [w.start, w.end]), ...(deadline ? [deadline] : [])];
 
   // Percentages the record supports: explicit discounts, percentages inside
-  // any quoted condition, and discounts implied by pairs of record prices.
-  const knownPercents = new Set<number>(promo.discounts.map((d) => d.percent));
-  for (const c of promo.conditions) {
-    for (const p of [...findPercents(c.quote), ...findPercents(c.text)]) knownPercents.add(p.percent);
-  }
-  const impliedPercents: number[] = [];
+  // any quoted condition, and discounts implied by two prices of the same offer.
+  const conditionPercents = promo.conditions.flatMap((c) => [...findPercents(c.quote), ...findPercents(c.text)]).map((p) => p.percent);
+  const impliedPercents: Array<{ percent: number; offer: string | null }> = [];
   for (const a of promo.prices) {
     for (const b of promo.prices) {
-      if (a.amount > b.amount && a.currency === b.currency && a.basis === b.basis) {
-        impliedPercents.push((1 - b.amount / a.amount) * 100);
+      if (a.amount > b.amount && a.currency === b.currency && a.basis === b.basis && a.offer === b.offer) {
+        impliedPercents.push({ percent: (1 - b.amount / a.amount) * 100, offer: a.offer });
       }
     }
   }
@@ -163,29 +186,37 @@ export function check(text: string, record: PromoRecord, options: CheckOptions =
     return iso >= today ? iso : `${y + 1}${md}`;
   };
 
-  const checkPrice = (c: PriceClaim, line: number): boolean => {
-    const byAmount = promo.prices.filter((p) => sameAmount(p.amount, c.amount));
+  const push = (f: Finding) => findings.push(f);
+
+  const checkPrice = (c: PriceClaim, line: number, offer: string | null): boolean => {
+    const pool = inScope(promo.prices, offer);
     const normalized = formatPrice(c, formatAmount(c.amount));
+    const base = { line, excerpt: c.raw, offer };
+    const byAmount = pool.filter((p) => sameAmount(p.amount, c.amount));
     if (byAmount.length === 0) {
-      findings.push({
+      const elsewhere = otherOffers(promo.prices, offer).filter((p) => sameAmount(p.amount, c.amount));
+      if (elsewhere.length) {
+        push({ ...base, severity: "error", code: "wrong_offer", message: `Price ${normalized} belongs to ${owners(elsewhere)}, not ${offer}.` });
+        return false;
+      }
+      const scope = offer ? ` for ${offer}` : "";
+      push({
+        ...base,
         severity: "error",
         code: "price_mismatch",
-        line,
-        excerpt: c.raw,
         message:
-          promo.prices.length === 0
-            ? `Price ${normalized} is not in the record (the record has no prices).`
-            : `Price ${normalized} does not match the record. Record prices: ${promo.prices.map(describePrice).join("; ")}.`,
+          pool.length === 0
+            ? `Price ${normalized} is not in the record (the record has no prices${scope}).`
+            : `Price ${normalized} does not match the record. Record prices${scope}: ${pool.map(describePrice).join("; ")}.`,
       });
       return false;
     }
     const byCurrency = byAmount.filter((p) => c.currencies.includes(p.currency.toUpperCase()));
     if (byCurrency.length === 0) {
-      findings.push({
+      push({
+        ...base,
         severity: "error",
         code: "currency_mismatch",
-        line,
-        excerpt: c.raw,
         message: `Currency "${c.currencyToken}" does not match the record: ${byAmount.map(describePrice).join("; ")}.`,
       });
       return false;
@@ -196,128 +227,134 @@ export function check(text: string, record: PromoRecord, options: CheckOptions =
         return allowed === "any" || allowed.includes(c.basis!);
       });
       if (!compatible) {
-        findings.push({
+        push({
+          ...base,
           severity: "error",
           code: "price_basis_mismatch",
-          line,
-          excerpt: c.raw,
           message: `Price ${normalized} is described as "${c.basis.replace(/_/g, " ")}", but the record says ${byCurrency.map((p) => p.basis.replace(/_/g, " ")).join(" / ")}.`,
         });
         return false;
       }
     } else if (byCurrency.every((p) => BASIS_NEEDS_DISCLOSURE.has(p.basis))) {
-      findings.push({
+      push({
+        ...base,
         severity: "warning",
         code: "price_basis_missing",
-        line,
-        excerpt: c.raw,
         message: `Price ${normalized} does not say its basis; the record says ${byCurrency[0]!.basis.replace(/_/g, " ")}.`,
       });
     }
     return true;
   };
 
-  const checkPercent = (c: PercentClaim, line: number): boolean => {
-    if ([...knownPercents].some((p) => Math.abs(p - c.percent) < 0.005)) return true;
-    if (impliedPercents.some((p) => Math.abs(p - c.percent) < 0.5)) return true;
-    const known = [...knownPercents].map((p) => `${p}%`);
-    findings.push({
+  const checkPercent = (c: PercentClaim, line: number, offer: string | null): boolean => {
+    const same = (p: number) => Math.abs(p - c.percent) < 0.005;
+    const discounts = inScope(promo.discounts, offer);
+    if (discounts.some((d) => same(d.percent)) || conditionPercents.some(same)) return true;
+    if (inScope(impliedPercents, offer).some((p) => Math.abs(p.percent - c.percent) < 0.5)) return true;
+    const base = { line, excerpt: c.raw, offer };
+    const elsewhere = [
+      ...otherOffers(promo.discounts, offer).filter((d) => same(d.percent)),
+      ...otherOffers(impliedPercents, offer).filter((p) => Math.abs(p.percent - c.percent) < 0.5),
+    ];
+    if (elsewhere.length) {
+      push({ ...base, severity: "error", code: "wrong_offer", message: `${c.percent}% belongs to ${owners(elsewhere)}, not ${offer}.` });
+      return false;
+    }
+    const known = [...new Set([...discounts.map((d) => d.percent), ...conditionPercents])].map((p) => `${p}%`);
+    const scope = offer ? ` for ${offer}` : "";
+    push({
+      ...base,
       severity: "error",
       code: "percent_mismatch",
-      line,
-      excerpt: c.raw,
       message: known.length
-        ? `${c.percent}% does not match the record (${known.join(", ")}).`
-        : `${c.percent}% is not in the record (the record has no percentages).`,
+        ? `${c.percent}% does not match the record${scope} (${known.join(", ")}).`
+        : `${c.percent}% is not in the record (the record has no percentages${scope}).`,
     });
     return false;
   };
 
-  const windowsText = () =>
-    windows.length ? windows.map((w) => `${w.start}..${w.end} (${w.label})`).join("; ") : "none";
+  const windowsText = (ws: Window[]) =>
+    ws.length ? ws.map((w) => `${w.start}..${w.end} (${w.offer ? `${w.offer}, ` : ""}${w.label})`).join("; ") : "none";
 
-  const checkDate = (c: DateClaim, line: number): { ok: boolean; normalized: string } => {
+  /** Does [from, to] match a window exactly, or sit inside a non-blackout window? */
+  const fits = (ws: Window[], from: string, to: string) =>
+    ws.some((w) => w.start === from && w.end === to) ||
+    (from === to && ws.some((w) => w.start === from || w.end === from)) ||
+    ws.some((w) => !w.blackout && from >= w.start && to <= w.end);
+
+  const checkDate = (c: DateClaim, line: number, offer: string | null): { ok: boolean; normalized: string } => {
+    const base = { line, excerpt: c.raw, offer };
     const from = resolve(c.from);
+    let to = from;
     if (c.to) {
-      let to = resolve(c.to);
+      to = resolve(c.to);
       if (to < from) to = `${Number(to.slice(0, 4)) + 1}${to.slice(4)}`;
-      const normalized = `${from}..${to}`;
-      if (windows.some((w) => w.start === from && w.end === to)) return { ok: true, normalized };
-      const blackout = windows.find((w) => w.blackout && from <= w.end && to >= w.start);
-      if (blackout) {
-        findings.push({
-          severity: "error",
-          code: "date_in_blackout",
-          line,
-          excerpt: c.raw,
-          message: `Dates ${normalized} overlap the blackout ${blackout.start}..${blackout.end} (${blackout.label}).`,
-        });
-        return { ok: false, normalized };
-      }
-      if (windows.some((w) => !w.blackout && from >= w.start && to <= w.end)) return { ok: true, normalized };
-      findings.push({
-        severity: "error",
-        code: "date_mismatch",
-        line,
-        excerpt: c.raw,
-        message: `Dates ${normalized} are not within the record's travel dates: ${windowsText()}.`,
-      });
-      return { ok: false, normalized };
     }
+    const isRange = c.to !== null;
+    const normalized = isRange ? `${from}..${to}` : from;
+    const what = isRange ? `Dates ${normalized}` : normalized;
 
-    const normalized = from;
-    if (c.isDeadline) {
+    if (!isRange && c.isDeadline) {
       if (deadline === from) return { ok: true, normalized };
-      findings.push({
+      push({
+        ...base,
         severity: "error",
         code: "deadline_mismatch",
-        line,
-        excerpt: c.raw,
         message: deadline
           ? `Deadline ${from} does not match the record's booking deadline ${deadline}.`
           : `${from} is presented as a deadline, but the record has no booking deadline.`,
       });
       return { ok: false, normalized };
     }
-    if (recordDates.includes(from)) return { ok: true, normalized };
-    const blackout = windows.find((w) => w.blackout && from >= w.start && from <= w.end);
+
+    const scoped = inScope(windows, offer);
+    if (scoped.some((w) => w.start === from && w.end === to)) return { ok: true, normalized };
+    if (!isRange && (deadline === from || scoped.some((w) => w.start === from || w.end === from))) return { ok: true, normalized };
+    const blackout = scoped.find((w) => w.blackout && from <= w.end && to >= w.start);
     if (blackout) {
-      findings.push({
+      push({
+        ...base,
         severity: "error",
         code: "date_in_blackout",
-        line,
-        excerpt: c.raw,
-        message: `${from} falls in the blackout ${blackout.start}..${blackout.end} (${blackout.label}).`,
+        message: `${what} ${isRange ? "overlap" : "falls in"} the blackout ${blackout.start}..${blackout.end} (${blackout.label}).`,
       });
       return { ok: false, normalized };
     }
-    if (windows.some((w) => !w.blackout && from >= w.start && from <= w.end)) return { ok: true, normalized };
-    findings.push({
+    if (fits(scoped, from, to)) return { ok: true, normalized };
+
+    const elsewhere = otherOffers(windows, offer).filter((w) => fits([w], from, to));
+    if (elsewhere.length) {
+      push({ ...base, severity: "error", code: "wrong_offer", message: `${what} belong${isRange ? "" : "s"} to ${owners(elsewhere)}, not ${offer}.` });
+      return { ok: false, normalized };
+    }
+    const scope = offer ? ` for ${offer}` : "";
+    push({
+      ...base,
       severity: "error",
       code: "date_mismatch",
-      line,
-      excerpt: c.raw,
-      message: `${from} is not a date in the record. Travel dates: ${windowsText()}; booking deadline: ${deadline ?? "none"}.`,
+      message: isRange
+        ? `Dates ${normalized} are not within the record's travel dates${scope}: ${windowsText(scoped)}.`
+        : `${from} is not a date in the record${scope}. Travel dates: ${windowsText(scoped)}; booking deadline: ${deadline ?? "none"}.`,
     });
     return { ok: false, normalized };
   };
 
-  for (const c of claims) {
+  claims.forEach((c, i) => {
     const line = lineOf(text, c.index);
+    const offer = claimOffers[i] ?? null;
     if (c.type === "price") {
-      const ok = checkPrice(c, line);
-      const normalized = formatPrice(c, String(c.amount));
-      checked.push({ type: c.type, raw: c.raw, line, normalized, ok });
+      const ok = checkPrice(c, line, offer);
+      checked.push({ type: c.type, raw: c.raw, line, normalized: formatPrice(c, String(c.amount)), offer, ok });
     } else if (c.type === "percent") {
-      checked.push({ type: c.type, raw: c.raw, line, normalized: `${c.percent}%`, ok: checkPercent(c, line) });
+      checked.push({ type: c.type, raw: c.raw, line, normalized: `${c.percent}%`, offer, ok: checkPercent(c, line, offer) });
     } else {
-      const { ok, normalized } = checkDate(c, line);
-      checked.push({ type: c.type, raw: c.raw, line, normalized: c.isDeadline ? `deadline ${normalized}` : normalized, ok });
+      const { ok, normalized } = checkDate(c, line, offer);
+      checked.push({ type: c.type, raw: c.raw, line, normalized: c.isDeadline && !c.to ? `deadline ${normalized}` : normalized, offer, ok });
     }
-  }
+  });
 
   if (deadline && deadline < today) {
-    findings.push({
+    push({
       severity: "error",
       code: "deadline_passed",
       message: `The booking deadline ${deadline} has passed (today is ${today}). Do not publish this promotion.`,
@@ -326,7 +363,7 @@ export function check(text: string, record: PromoRecord, options: CheckOptions =
 
   for (const term of terms) {
     if (!hasTerm(text, term)) {
-      findings.push({
+      push({
         severity: term.severity ?? "error",
         code: "missing_term",
         message: `Missing required term "${term.id}"${term.description ? ` (${term.description})` : ""}. Expected one of: ${term.any.slice(0, 4).join(", ")}${term.any.length > 4 ? ", ..." : ""}.`,
@@ -335,15 +372,18 @@ export function check(text: string, record: PromoRecord, options: CheckOptions =
   }
 
   if (record.extraction.unverified_quotes > 0) {
-    findings.push({
+    push({
       severity: "warning",
       code: "record_unverified",
       message: `The record has ${record.extraction.unverified_quotes} quote(s) that were not found in the source. Review the record before relying on it.`,
     });
   }
+  for (const w of record.extraction.warnings) {
+    push({ severity: "warning", code: "record_warning", message: `Record: ${w}` });
+  }
 
   if (claims.length === 0) {
-    findings.push({ severity: "info", code: "no_claims", message: "No prices, percentages or dates found in the text." });
+    push({ severity: "info", code: "no_claims", message: "No prices, percentages or dates found in the text." });
   }
 
   const order: Record<Severity, number> = { error: 0, warning: 1, info: 2 };

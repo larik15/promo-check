@@ -9,13 +9,14 @@ const items = [
   ["sunward-flyer.pdf", "sunward-flyer.llm.json", "sunward.record.json"],
   ["horizonte-crucero-email.txt", "horizonte-crucero.llm.json", "horizonte.record.json"],
   ["northpeak-sale-email.txt", "northpeak-sale.llm.json", "northpeak.record.json"],
+  ["velatura-city-breaks-email.txt", "velatura-city-breaks.llm.json", "velatura.record.json"],
 ];
 
 await mkdir(new URL("examples/records/", root), { recursive: true });
 for (const [source, llm, out] of items) {
   const output = JSON.parse(await readFile(new URL(`test/fixtures/${llm}`, root), "utf8"));
   const record = await extract(new URL(`test/fixtures/${source}`, root).pathname.replace(/^\/([A-Za-z]:)/, "$1"), {
-    provider: { name: "anthropic", model: "claude-opus-5-5", extract: async () => output },
+    provider: { name: "anthropic", model: "claude-opus-5-5", extract: async () => ({ promotion: output, usage: null }) },
     now: new Date("2026-11-14T12:00:00Z"),
   });
   await writeFile(new URL(`examples/records/${out}`, root), JSON.stringify(record, null, 2) + "\n");

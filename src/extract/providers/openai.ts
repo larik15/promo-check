@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { ExtractedPromotionSchema, type ExtractedPromotion } from "../../schema.js";
+import { ExtractedPromotionSchema } from "../../schema.js";
 import { SYSTEM_PROMPT, userPrompt } from "../prompt.js";
 import { toBase64 } from "../source.js";
-import { ExtractionError, type ExtractionProvider, type ExtractionRequest } from "./types.js";
+import { ExtractionError, type ExtractionProvider, type ExtractionRequest, type ExtractionResult } from "./types.js";
 
 export const DEFAULT_OPENAI_MODEL = "gpt-5";
 
@@ -35,7 +35,7 @@ export function openAIProvider(options: OpenAIProviderOptions = {}): ExtractionP
   return {
     name: "openai",
     model,
-    async extract({ source, referenceDate }: ExtractionRequest): Promise<ExtractedPromotion> {
+    async extract({ source, referenceDate }: ExtractionRequest): Promise<ExtractionResult> {
       if (source.kind === "pdf" && source.pages.length === 0) {
         throw new ExtractionError("This PDF has no text layer. Use the Anthropic provider for scanned PDFs.");
       }
@@ -70,7 +70,19 @@ export function openAIProvider(options: OpenAIProviderOptions = {}): ExtractionP
       if (!message?.content) throw new ExtractionError("The model returned no content.");
       const parsed = ExtractedPromotionSchema.safeParse(JSON.parse(message.content));
       if (!parsed.success) throw new ExtractionError(`Invalid record from model: ${parsed.error.message}`);
-      return parsed.data;
+      const u = completion.usage;
+      const cached = u?.prompt_tokens_details?.cached_tokens ?? 0;
+      return {
+        promotion: parsed.data,
+        usage: u
+          ? {
+              input_tokens: u.prompt_tokens - cached,
+              output_tokens: u.completion_tokens,
+              cache_creation_input_tokens: 0,
+              cache_read_input_tokens: cached,
+            }
+          : null,
+      };
     },
   };
 }

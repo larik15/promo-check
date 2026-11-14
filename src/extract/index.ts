@@ -36,17 +36,19 @@ export async function extract(input: string | PromoSource, options: ExtractOptio
   const now = options.now ?? new Date();
   const referenceDate = options.referenceDate ?? now.toISOString().slice(0, 10);
 
-  const extracted = await provider.extract({ source, referenceDate });
-  const { promotion, unverified } = verifyPromotion(extracted, source);
+  const { promotion: extracted, usage } = await provider.extract({ source, referenceDate });
+  const { promotion, unverified, warnings } = verifyPromotion(extracted, source);
 
   return {
-    schema_version: 1,
+    schema_version: 2,
     source: { kind: source.kind, file: source.file, pages: source.pageCount },
     extraction: {
       provider: provider.name,
       model: provider.model,
       extracted_at: now.toISOString(),
       unverified_quotes: unverified,
+      warnings,
+      usage,
     },
     promotion,
   };

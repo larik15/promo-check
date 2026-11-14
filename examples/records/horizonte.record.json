@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "source": {
     "kind": "email",
     "file": "horizonte-crucero-email.txt",
@@ -9,7 +9,9 @@
     "provider": "anthropic",
     "model": "claude-opus-5-5",
     "extracted_at": "2026-11-14T12:00:00.000Z",
-    "unverified_quotes": 0
+    "unverified_quotes": 0,
+    "warnings": [],
+    "usage": null
   },
   "promotion": {
     "supplier": {
@@ -30,8 +32,33 @@
       "page": null,
       "verified": true
     },
+    "offers": [
+      {
+        "name": "Cabina interior",
+        "aliases": [
+          "interior",
+          "inside cabin",
+          "interior cabin"
+        ],
+        "quote": "(cabina interior)",
+        "page": null,
+        "verified": true
+      },
+      {
+        "name": "Cabina con balcón",
+        "aliases": [
+          "balcón",
+          "balcony",
+          "balcony cabin"
+        ],
+        "quote": "Cabina con balcón",
+        "page": null,
+        "verified": true
+      }
+    ],
     "prices": [
       {
+        "offer": "Cabina interior",
         "label": "Cabina interior",
         "amount": 1299,
         "currency": "USD",
@@ -41,6 +68,7 @@
         "verified": true
       },
       {
+        "offer": "Cabina con balcón",
         "label": "Cabina con balcón",
         "amount": 1749,
         "currency": "USD",
@@ -50,6 +78,7 @@
         "verified": true
       },
       {
+        "offer": null,
         "label": "Impuestos portuarios (no incluidos)",
         "amount": 150,
         "currency": "USD",
@@ -61,6 +90,7 @@
     ],
     "discounts": [
       {
+        "offer": null,
         "label": "Descuento para el segundo pasajero de la cabina",
         "percent": 25,
         "quote": "El segundo pasajero de la cabina obtiene un 25% de descuento.",
@@ -70,6 +100,7 @@
     ],
     "travel_dates": [
       {
+        "offer": null,
         "label": "Salida 1",
         "start": "2027-02-10",
         "end": "2027-02-15",
@@ -78,6 +109,7 @@
         "verified": true
       },
       {
+        "offer": null,
         "label": "Salida 2",
         "start": "2027-03-03",
         "end": "2027-03-08",

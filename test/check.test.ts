@@ -179,3 +179,67 @@ describe("formatReport", () => {
     expect(text).toContain('"$1,199"');
   });
 });
+
+describe("check: several offers (Madrid / Lisbon)", () => {
+  it("passes a post where every claim sits next to the right city", async () => {
+    const record = await recordFor("velatura");
+    const report = check(post("velatura-good.en.txt"), record, { today: TODAY });
+    expect(report.findings).toEqual([]);
+    expect(report.claims.map((c) => `${c.normalized} [${c.offer}]`)).toEqual([
+      "1299 EUR [Madrid]",
+      "2027-04-05..2027-04-09 [Madrid]",
+      "2027-05-03..2027-05-07 [Madrid]",
+      "15% [Madrid]",
+      "899 EUR [Lisbon]",
+      "2027-04-12..2027-04-15 [Lisbon]",
+      "10% [Lisbon]",
+      "deadline 2026-12-15 [null]",
+      "95 EUR [null]",
+    ]);
+  });
+
+  it("reports values that belong to a different offer", async () => {
+    const record = await recordFor("velatura");
+    const report = check(post("velatura-bad.en.txt"), record, { today: TODAY });
+    expect(report.findings.map((f) => f.message)).toEqual([
+      "Price 1,299 EUR belongs to Madrid, not Lisbon.",
+      "Dates 2027-04-05..2027-04-09 belong to Madrid, not Lisbon.",
+      "15% belongs to Madrid, not Lisbon.",
+      "Price 899 EUR belongs to Lisbon, not Madrid.",
+    ]);
+    expect(report.findings.every((f) => f.code === "wrong_offer")).toBe(true);
+  });
+
+  it("recognizes Spanish names through aliases (Lisboa)", async () => {
+    const record = await recordFor("velatura");
+    const report = check(post("velatura-bad.es.txt"), record, { today: TODAY });
+    expect(report.language).toBe("es");
+    expect(report.findings.map((f) => `${f.code} line ${f.line}: ${f.message}`)).toEqual([
+      "wrong_offer line 1: Price 1,299 EUR belongs to Madrid, not Lisbon.",
+      "wrong_offer line 1: Dates 2027-04-05..2027-04-09 belong to Madrid, not Lisbon.",
+      "wrong_offer line 2: Price 899 EUR belongs to Lisbon, not Madrid.",
+      "wrong_offer line 2: 10% belongs to Lisbon, not Madrid.",
+    ]);
+  });
+
+  it("still reports values that are in no offer at all", async () => {
+    const record = await recordFor("velatura");
+    const report = check("Lisbon from €799 per person, double occupancy.", record, { today: TODAY, requiredTerms: [] });
+    expect(report.findings.map((f) => f.code)).toEqual(["price_mismatch"]);
+    expect(report.findings[0]!.message).toBe(
+      "Price 799 EUR does not match the record. Record prices for Lisbon: 899 EUR per person double occupancy (Lisbon, 3 nights); 95 EUR per person (Taxes and fees (not included)).",
+    );
+  });
+
+  it("compares claims with no nearby offer against the whole record", async () => {
+    const record = await recordFor("velatura");
+    const report = check("City breaks from €899 per person, double occupancy.", record, { today: TODAY, requiredTerms: [] });
+    expect(report.ok).toBe(true);
+  });
+
+  it("checks room types as offers too", async () => {
+    const record = await recordFor("sunward");
+    const report = check("Ocean View Room from US$1,299 per person, double occupancy.", record, { today: TODAY, requiredTerms: [] });
+    expect(report.findings.map((f) => f.message)).toEqual(["Price 1,299 USD belongs to Garden View Room, not Ocean View Room."]);
+  });
+});

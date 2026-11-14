@@ -17,7 +17,7 @@ export function mockProvider(output: ExtractedPromotion, seen?: { requests: unkn
     model: "mock-model",
     async extract(request) {
       seen?.requests.push(request);
-      return structuredClone(output);
+      return { promotion: structuredClone(output), usage: null };
     },
   };
 }
@@ -30,10 +30,11 @@ const SOURCES = {
   sunward: "sunward-flyer.pdf",
   horizonte: "horizonte-crucero-email.txt",
   northpeak: "northpeak-sale-email.txt",
+  velatura: "velatura-city-breaks-email.txt",
 } as const;
 
 /** Runs the real extract pipeline (loading, quote verification) with a mock LLM. */
 export function recordFor(name: keyof typeof SOURCES): Promise<PromoRecord> {
-  const llmName = { sunward: "sunward-flyer", horizonte: "horizonte-crucero", northpeak: "northpeak-sale" }[name];
+  const llmName = ({ sunward: "sunward-flyer", horizonte: "horizonte-crucero", northpeak: "northpeak-sale", velatura: "velatura-city-breaks" } as const)[name];
   return extract(fixture(SOURCES[name]), { provider: mockProvider(llmOutput(llmName)), now: NOW });
 }

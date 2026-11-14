@@ -31,7 +31,8 @@
     "test": "vitest run",
     "fixtures": "node scripts/make-fixtures.mjs",
     "examples": "npm run build && node scripts/make-examples.mjs",
-    "prepare": "npm run build"
+    "prepare": "npm run build",
+    "test:live": "node scripts/test-live.mjs"
   },
   "keywords": [
     "marketing",

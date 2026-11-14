@@ -4,8 +4,8 @@ Keep AI-generated marketing accurate when it is based on travel and retail promo
 
 `promo-check` does two things:
 
-1. **`extract`** reads a supplier promotion (a PDF, a flyer image, or email text) and uses an LLM to build a structured JSON record: supplier, product/destination, prices (amount, currency, basis such as per person or double occupancy), travel dates, booking deadline and conditions. Every value carries the **exact source quote** (and the **page number** for PDFs). Quotes are then checked against the source text, so a value the model invented is marked `verified: false`.
-2. **`check`** takes a marketing post or email (English or Spanish) plus that record and, **without any LLM**, finds every price, percentage and date in the text, normalizes it (`$1,299`, `1.299 USD`, `12 de marzo`, `March 12–19`...), and reports anything the record does not back up. It also flags passed booking deadlines and missing required terms.
+1. **`extract`** reads a supplier promotion (a PDF, a flyer image, or email text) and uses an LLM to build a structured JSON record: supplier, product/destination, the separately priced offers (destinations, products, room or cabin types), prices (amount, currency, basis such as per person or double occupancy), travel dates, booking deadline and conditions. Each price, percentage and date range is linked to the offer it belongs to. Every value carries the **exact source quote** (and the **page number** for PDFs). Quotes are then checked against the source text, so a value the model invented is marked `verified: false`.
+2. **`check`** takes a marketing post or email (English or Spanish) plus that record and, **without any LLM**, finds every price, percentage and date in the text, normalizes it (`$1,299`, `1.299 USD`, `12 de marzo`, `March 12–19`...), links it to the nearest offer named in the text, and reports anything the record does not back up for that offer: `Price 1,299 EUR belongs to Madrid, not Lisbon.` It also flags passed booking deadlines and missing required terms.
 
 ## Why it matters
 
@@ -79,6 +79,7 @@ Every company, hotel, ship and place in this repo is made up. The sample flyer [
 
 ```json
 {
+  "offer": "Garden View Room",
   "label": "7-night package, Garden View Room",
   "amount": 1299,
   "currency": "USD",
@@ -100,7 +101,7 @@ ERROR price_mismatch        line 1    "$1,199"
 ERROR price_basis_mismatch  line 2    "$1,299"
       Price $1,299 is described as "per couple", but the record says per person double occupancy.
 ERROR percent_mismatch      line 3    "35%"
-      35% does not match the record (30%, 20%).
+      35% does not match the record for Garden View Room (30%, 20%).
 ERROR date_in_blackout      line 3    "March 22-26, 2027"
       Dates 2027-03-22..2027-03-26 overlap the blackout 2027-03-20..2027-03-28 (Blackout dates).
 ERROR deadline_mismatch     line 5    "December 31, 2026"
@@ -112,6 +113,24 @@ ERROR missing_term
 WARN  price_basis_missing   line 4    "US$1,549"
       Price 1,549 USD does not say its basis; the record says per person double occupancy.
 ```
+
+When a promotion has several offers, each claim is compared only with the offer named next to it. [`examples/posts/velatura-bad.en.txt`](examples/posts/velatura-bad.en.txt) swaps the Madrid and Lisbon details from [`examples/records/velatura.record.json`](examples/records/velatura.record.json):
+
+```text
+$ promo-check check examples/posts/velatura-bad.en.txt --record examples/records/velatura.record.json --today 2026-11-14
+FAIL  4 error(s), 0 warning(s); 1/5 claim(s) match the record  [lang: en, today: 2026-11-14]
+
+ERROR wrong_offer           line 1    "€1,299"
+      Price 1,299 EUR belongs to Madrid, not Lisbon.
+ERROR wrong_offer           line 1    "April 5-9, 2027"
+      Dates 2027-04-05..2027-04-09 belong to Madrid, not Lisbon.
+ERROR wrong_offer           line 1    "15%"
+      15% belongs to Madrid, not Lisbon.
+ERROR wrong_offer           line 3    "€899"
+      Price 899 EUR belongs to Lisbon, not Madrid.
+```
+
+The Spanish version ([`velatura-bad.es.txt`](examples/posts/velatura-bad.es.txt)) gives the same result: "Lisboa" is recorded as an alias of Lisbon.
 
 A Spanish example: [`examples/posts/horizonte-bad.es.txt`](examples/posts/horizonte-bad.es.txt) against [`examples/records/horizonte.record.json`](examples/records/horizonte.record.json) catches `$1.199` vs `1.299 USD`, `por pareja` vs `por persona en ocupación doble`, `12 de marzo` outside both departures, and `Reserva hasta el 15 de diciembre` vs the real deadline of 30 November.
 
@@ -126,12 +145,18 @@ A Spanish example: [`examples/posts/horizonte-bad.es.txt`](examples/posts/horizo
 | `percent_mismatch` | error | Percentage not in the record's discounts, conditions, or implied by two record prices (was/now) |
 | `date_mismatch` | error | Date or range outside every record date and travel window |
 | `date_in_blackout` | error | Date falls in a window labeled as blackout/excluded |
+| `wrong_offer` | error | The value exists, but for a different offer than the one named next to it |
 | `deadline_mismatch` | error | A "book by" / "reserva antes del" date differs from the record's deadline |
 | `deadline_passed` | error | The record's booking deadline is before `--today` |
 | `missing_term` | error (configurable) | A required disclosure is missing |
 | `record_unverified` | warning | The record contains quotes not found in the source |
+| `record_warning` | warning | Extraction fixed something, e.g. a value linked to an unknown offer |
 
 Dates without a year are resolved against the record (and then `--today`). Numeric dates are read as MM/DD in English and DD/MM in Spanish.
+
+### Offers
+
+Offer names and aliases are found in the text ignoring case and accents. Each claim goes to the nearest offer named earlier in the same sentence; failing that, one named later in the same sentence; failing that, the last one named earlier in the same paragraph (so a heading like "Lisbon" covers the lines under it). A claim with no offer nearby, such as a closing line about taxes, is compared with the whole record. Values the record marks as promotion-wide (`offer: null`) are valid for every offer.
 
 ### Required terms
 
@@ -152,12 +177,14 @@ Values wrapped in `/.../` are regular expressions. Use `--no-terms` to skip this
 
 - **Claude (default):** the PDF or image is sent as-is (so scanned PDFs work), with structured outputs so the response always matches the record schema. Refusals and truncated responses raise an `ExtractionError` instead of returning a partial record. Server-side refusal fallbacks are enabled for models that support them.
 - **OpenAI (optional):** uses strict JSON-schema output. PDFs are sent as their text layer, so scanned PDFs need the Claude provider.
+- **Records** also store the token usage of the extraction call (`extraction.usage`) and any fixes made after it (`extraction.warnings`), e.g. a value linked to an offer name that does not exist.
 - **Quote verification:** for PDFs (with a text layer) and email text, every quote is searched in the source, ignoring case, spacing, curly quotes and dash styles. Found quotes get `verified: true` and the page where they really appear; missing quotes get `verified: false` and are counted in `extraction.unverified_quotes`. Image quotes cannot be checked locally and get `verified: null`.
 
 ## Limitations
 
 - `check` only verifies what it can parse: prices need a currency symbol, code or word (`$`, `USD`, `€`, `dólares`, `pesos`...); bare numbers like "1,299" are ignored. Spelled-out numbers ("thirty percent"), "2x1", "half price" and relative dates ("next Friday", "this weekend") are not detected.
-- It checks that each claim exists in the record, not that it is attached to the right product: if the record has two prices, quoting the cheaper one for the more expensive room passes.
+- Offer linking is by proximity, not grammar. A sentence that names two offers before a value ("Madrid or Lisbon from €899") links it to the nearer one, and an offer the text refers to only indirectly ("the capital", "our second city") is not recognized unless the record lists it as an alias.
+- The booking deadline is one per promotion; per-offer deadlines are not modeled.
 - Only English and Spanish are supported. A bare `$` is accepted for any dollar or peso currency in the record.
 - Ambiguous separators are resolved by a rule: one separator followed by exactly three digits is a thousands separator (`1.299` = 1299).
 - Deadline detection relies on nearby wording ("book by", "offer ends", "reserva antes del", "válido hasta"...).
@@ -168,6 +195,9 @@ Values wrapped in `/.../` are regular expressions. Use `--no-terms` to skip this
 
 ```bash
 npm test               # builds, then runs the tests (no API key needed; LLM calls are mocked)
+npm run test:live      # optional: extracts every fixture with the real Claude API and compares the
+                       # result with the expected record; skipped unless ANTHROPIC_API_KEY is set
+                       # (environment or a local .env file). Costs a few cents; output goes to .live/
 npm run fixtures       # regenerate the sample PDF
 npm run examples       # regenerate examples/records from the canned LLM outputs
 ```

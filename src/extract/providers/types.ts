@@ -1,4 +1,4 @@
-import type { ExtractedPromotion } from "../../schema.js";
+import type { ExtractedPromotion, Usage } from "../../schema.js";
 import type { PromoSource } from "../source.js";
 
 export interface ExtractionRequest {
@@ -7,11 +7,17 @@ export interface ExtractionRequest {
   referenceDate: string;
 }
 
+export interface ExtractionResult {
+  promotion: ExtractedPromotion;
+  /** Token usage, when the provider reports it. */
+  usage: Usage | null;
+}
+
 /** Anything that turns a source into an ExtractedPromotion. Implement this to plug in another LLM or a mock. */
 export interface ExtractionProvider {
   name: string;
   model: string;
-  extract(request: ExtractionRequest): Promise<ExtractedPromotion>;
+  extract(request: ExtractionRequest): Promise<ExtractionResult>;
 }
 
 export class ExtractionError extends Error {
